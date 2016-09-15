@@ -3,6 +3,7 @@
 # Author: Mathieu Tortuyaux 13 / 09 / 16
 
 from hashlib import sha256
+from sys import argv
 
 K = [
 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -21,14 +22,14 @@ H = [
 
 W = []
 
-a = H[0]
-b = H[1]
-c = H[2]
-d = H[3]
-e = H[4]
-f = H[5]
-g = H[6]
-h = H[7]
+iA = H[0]
+iB = H[1]
+iC = H[2]
+iD = H[3]
+iE = H[4]
+iF = H[5]
+iG = H[6]
+iH = H[7]
 
 # DEFINITION DES FONCTIONS
 
@@ -66,7 +67,13 @@ def parsing(pad):
 
 if __name__ == "__main__":
 
-	pad = padding("abc")
+	if len(argv) != 2:
+		print("Usage: %s <word to hash>"%argv[0])
+		exit(0)
+
+	word = argv[1]
+
+	pad = padding(word)
 	m = parsing(pad)
 
 	for f in range(0, 16):
@@ -76,35 +83,33 @@ if __name__ == "__main__":
 		W.append(sig1(W[f-2]) + W[f-7] + sig0(W[f-15]) + W[f-16])
 
 	for t in range(0, 64):
-		#print('%s : %s | %s | %s | %s | %s | %s | %s | %s'%(t, format(a, 'x').zfill(8), format(b, 'x').zfill(8), format(c, 'x').zfill(8), format(d, 'x').zfill(8), format(e, 'x').zfill(8), format(f, 'x').zfill(8), format(g, 'x').zfill(8), format(h, 'x').zfill(8)))
+		#print(hex(iA), hex(iB), hex(iC), hex(iD), hex(iE), hex(iF), hex(iG), hex(iH))
+		T1 = (iH + SIG1(iE) + ch(iE, iF, iG) + K[t] + W[t]) % pow(2, 32)
+		T2 = (SIG0(iA) + maj(iA, iB, iC)) %pow(2, 32)
+		iH = iG
+		iG = iF
+		iF = iE
+		iE = (iD + T1)%pow(2, 32)
+		iD = iC
+		iC = iB
+		iB = iA
+		iA = (T1 + T2)%pow(2, 32)
 
-		T1 = h + SIG1(e) + ch(e, f, g) + K[t] + W[t]
-		T2 = SIG0(a) + maj(a, b, c)
-		h = g
-		g = f
-		f = e
-		e = d + T1
-		d = c
-		c = b
-		b = a
-		a = T1 + T2
 	
-	H[0] = (a + H[0])%pow(2,32)
-	H[1] = (b + H[1])%pow(2,32)
-	H[2] = (c + H[2])%pow(2,32)
-	H[3] = (d + H[3])%pow(2,32)
-	H[4] = (e + H[4])%pow(2,32)
-	H[5] = (f + H[5])%pow(2,32)
-	H[6] = (g + H[6])%pow(2,32)
-	H[7] = (h + H[7])%pow(2,32)
+	H[0] = (iA + H[0])%pow(2,32)
+	H[1] = (iB + H[1])%pow(2,32)
+	H[2] = (iC + H[2])%pow(2,32)
+	H[3] = (iD + H[3])%pow(2,32)
+	H[4] = (iE + H[4])%pow(2,32)
+	H[5] = (iF + H[5])%pow(2,32)
+	H[6] = (iG + H[6])%pow(2,32)
+	H[7] = (iH + H[7])%pow(2,32)
 
 	hexdigest = ""
 
-	real = sha256('abc').hexdigest()
-	print(real, len(real))
-
+	real = sha256(word).hexdigest()
 	for f in H:
+		hexdigest += format(f, 'x').zfill(8)
 
-		print(hex(f))
-	print(len(hexdigest))
-	print(len(H))
+	print("Code: %s"%hexdigest, len(hexdigest))
+	print("Real: %s"%real, len(hexdigest))
