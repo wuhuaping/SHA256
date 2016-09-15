@@ -35,11 +35,16 @@ iH = H[7]
 
 ch = lambda x, y, z: ((x and y) + (not x and z)) % pow(2, 32)
 maj = lambda x, y, z: ((x and y ) + (x and y) + (y and z)) % pow(2, 32)
-rotate = lambda x, y: (x >> y) or ( x << (32 - y)) % pow(2, 32)
-SIG0 = lambda x: (rotate(x, 2) + rotate(x, 13) + rotate(x, 22))%pow(2, 32)
-SIG1 = lambda x: (rotate(x, 6) + rotate(x, 11) + rotate(x, 25))%pow(2, 32)
-sig0 = lambda x: (rotate(x, 7) + rotate(x, 18) + x >> 3)%pow(2, 32)
-sig1 = lambda x: (rotate(x, 17) + rotate(x, 19) + x >> 10)%pow(2,32)
+rotate = lambda x, y: (x & 0xffffffff >> y) | ( x << (32 - y)) & 0xffffffff
+shr = lambda x, y: (x & 0xffffffff) >> y
+SIG0 = lambda x: rotate(x, 2) + rotate(x, 13) + rotate(x, 22)
+SIG1 = lambda x: rotate(x, 6) + rotate(x, 11) + rotate(x, 25)
+sig0 = lambda x: rotate(x, 7) + rotate(x, 18) + shr(x, 3)
+sig1 = lambda x: rotate(x, 17) + rotate(x, 19) + shr(x, 10)
+
+
+def sum32(*args):
+	return sum(args) & 0xffffffff
 
 def padding(word):
 	
@@ -89,21 +94,21 @@ if __name__ == "__main__":
 		iH = iG
 		iG = iF
 		iF = iE
-		iE = (iD + T1)%pow(2, 32)
+		iE = sum32(iD,T1)
 		iD = iC
 		iC = iB
 		iB = iA
-		iA = (T1 + T2)%pow(2, 32)
+		iA = sum32(T1,T2)
 
 	
-	H[0] = (iA + H[0])%pow(2,32)
-	H[1] = (iB + H[1])%pow(2,32)
-	H[2] = (iC + H[2])%pow(2,32)
-	H[3] = (iD + H[3])%pow(2,32)
-	H[4] = (iE + H[4])%pow(2,32)
-	H[5] = (iF + H[5])%pow(2,32)
-	H[6] = (iG + H[6])%pow(2,32)
-	H[7] = (iH + H[7])%pow(2,32)
+	H[0] = sum32(iA, H[0])
+	H[1] = sum32(iB, H[1])
+	H[2] = sum32(iC, H[2])
+	H[3] = sum32(iD, H[3])
+	H[4] = sum32(iE, H[4])
+	H[5] = sum32(iF, H[5])
+	H[6] = sum32(iG, H[6])
+	H[7] = sum32(iH, H[7])
 
 	hexdigest = ""
 
