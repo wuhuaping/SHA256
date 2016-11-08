@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+.DS_Store
+env_huffman
+try.py
+*.hf
+*.tr
+*.log

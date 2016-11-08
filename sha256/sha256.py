@@ -33,21 +33,21 @@ iH = H[7]
 
 # DEFINITION DES FONCTIONS
 
-ch = lambda x, y, z: ((x and y) + (not x and z)) % pow(2, 32)
-maj = lambda x, y, z: ((x and y ) + (x and y) + (y and z)) % pow(2, 32)
-rotate = lambda x, y: (x & 0xffffffff >> y) | ( x << (32 - y)) & 0xffffffff
+ch = lambda x, y, z : (z ^ (x & (y ^ z)))
+maj = lambda x, y, z: (((x | y) & z) | (x & y))
+rotate = lambda x, y: (((x & 0xffffffff) >> (y & 31)) | (x << (32 - (y & 31)))) & 0xffffffff
 shr = lambda x, y: (x & 0xffffffff) >> y
-SIG0 = lambda x: rotate(x, 2) + rotate(x, 13) + rotate(x, 22)
-SIG1 = lambda x: rotate(x, 6) + rotate(x, 11) + rotate(x, 25)
-sig0 = lambda x: rotate(x, 7) + rotate(x, 18) + shr(x, 3)
-sig1 = lambda x: rotate(x, 17) + rotate(x, 19) + shr(x, 10)
+SIG0 = lambda x: rotate(x, 2) ^ rotate(x, 13) ^ rotate(x, 22)
+SIG1 = lambda x: rotate(x, 6) ^ rotate(x, 11) ^ rotate(x, 25)
+sig0 = lambda x: rotate(x, 7) ^ rotate(x, 18) ^ shr(x, 3)
+sig1 = lambda x: rotate(x, 17) ^ rotate(x, 19) ^ shr(x, 10)
 
 
 def sum32(*args):
 	return sum(args) & 0xffffffff
 
 def padding(word):
-	
+
 	pad = ""
 	for f in word:
 		pad += format(ord(f), 'b').zfill(8)
@@ -57,7 +57,7 @@ def padding(word):
 	zeros = 448 - (len(pad) + 1)
 	pad += "1"
 	pad += "0"*zeros
-	pad += format(clearLen, 'b').zfill(64)
+	pad += format(clearLen, 'b').zfill(64)[::-1]
 	return int(pad, 2)
 
 def parsing(pad):
@@ -67,6 +67,7 @@ def parsing(pad):
 
 	for i in range(0, 512, 32):
 		m.append(int(pad[i:i+32][::-1], 2))#big endian conversion
+		#m.append(int(pad[i:i+32], 2))#big endian conversion
 	return m
 
 
@@ -85,12 +86,12 @@ if __name__ == "__main__":
 		W.append(m[f])
 
 	for f in range(16, 64):
-		W.append(sig1(W[f-2]) + W[f-7] + sig0(W[f-15]) + W[f-16])
+		W.append(sig1(W[f-2]) + W[f-7] + sig0(W[f-15]) + W[f-16] & 0xffffffff)
 
 	for t in range(0, 64):
 		#print(hex(iA), hex(iB), hex(iC), hex(iD), hex(iE), hex(iF), hex(iG), hex(iH))
-		T1 = (iH + SIG1(iE) + ch(iE, iF, iG) + K[t] + W[t]) % pow(2, 32)
-		T2 = (SIG0(iA) + maj(iA, iB, iC)) %pow(2, 32)
+		T1 = iH +  SIG1(iE) + ch(iE, iF, iG) + K[t] + W[t]
+		T2 = SIG0(iA) + maj(iA, iB, iC)
 		iH = iG
 		iG = iF
 		iF = iE
@@ -100,7 +101,7 @@ if __name__ == "__main__":
 		iB = iA
 		iA = sum32(T1,T2)
 
-	
+
 	H[0] = sum32(iA, H[0])
 	H[1] = sum32(iB, H[1])
 	H[2] = sum32(iC, H[2])
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 
 	real = sha256(word).hexdigest()
 	for f in H:
-		hexdigest += format(f, 'x').zfill(8)
+		hexdigest += format(f, 'x').zfill(8)[::-1] # big endian
 
 	print("Code: %s"%hexdigest, len(hexdigest))
-	print("Real: %s"%real, len(hexdigest))
+	print("Real: %s"%real, len(real))
